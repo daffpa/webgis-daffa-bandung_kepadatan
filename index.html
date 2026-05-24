@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Peta Kepadatan Pusat Aktivitas dan Hubungannya dengan Lokasi Hunian di Kota Bandung — Platform GIS interaktif berbasis WebGL dengan visualisasi heatmap, 3D jalur, dan analisis spasial." />
+  <title>GIS Bandung — Kepadatan Pusat Aktivitas & Hunian</title>
+
+
+  <!-- MapLibre GL JS -->
+  <link  rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Turf.js for Spatial Analysis -->
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232dd4bf'/><text y='22' font-size='20' text-anchor='middle' x='16'>🗺</text></svg>" />
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════
+     LOADING
+═══════════════════════════════════════════ -->
+<div id="loading">
+  <div class="ld-logo">🗺️</div>
+  <div style="text-align:center;">
+    <div class="ld-title">Kepadatan Pusat Aktivitas</div>
+    <div class="ld-sub" style="margin-top:4px;">Kota Bandung · Memuat data spasial…</div>
+  </div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     APP
+═══════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header id="topbar">
+
+    <!-- Home Button -->
+    <a id="btn-home" class="ibtn" href="landing.html" title="Kembali ke Beranda" aria-label="Beranda">🏠</a>
+
+    <!-- Brand -->
+    <a class="brand" href="#" aria-label="GIS Bandung">
+      <div class="brand-mark">🗺️</div>
+      <div class="brand-text">
+        <span class="brand-name">Kepadatan Pusat Aktivitas Bandung</span>
+        <span class="brand-sub">Hubungan Aktivitas &amp; Hunian · WebGL</span>
+      </div>
+    </a>
+
+    <div class="topbar-sep"></div>
+
+    <!-- Search -->
+    <div class="top-search" role="search">
+      <span class="s-icon">🔍</span>
+      <input type="search" id="search-input"
+        placeholder="Cari nama lokasi atau fasilitas…"
+        autocomplete="off" spellcheck="false"
+        aria-label="Cari lokasi" />
+    </div>
+
+    <!-- Map Style Tabs -->
+    <div class="map-style-tabs" role="group" aria-label="Gaya peta">
+      <button class="stab on" data-style="dark"  title="Dark Mode">🌙 Dark</button>
+      <button class="stab"    data-style="light" title="Light Mode">☀️ Light</button>
+      <button class="stab"    data-style="topo"  title="Atlas">🗾 Atlas</button>
+    </div>
+
+    <div class="top-actions">
+      <button class="ibtn" id="chat-btn" title="GeoBot AI — Tanya tentang peta" aria-label="Buka GeoBot">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M8 21l4-5 4 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor"/>
+          <circle cx="15.5" cy="9.5" r="1.5" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="ibtn on" id="btn-sidebar" title="Panel Layer" aria-label="Toggle sidebar">☰</button>
+    </div>
+
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div id="content">
+
+    <!-- ════════════════════════════════════
+         SIDEBAR
+    ════════════════════════════════════ -->
+    <aside id="sidebar" aria-label="Panel Kontrol">
+
+      <div class="sb-head">
+        <div class="sb-title">Panel Kontrol</div>
+        <div class="sb-tabs" role="tablist">
+          <button class="sb-tab on" data-tab="layers"   role="tab">🗂 Layer</button>
+          <button class="sb-tab"    data-tab="analysis" role="tab">📊 Analisis</button>
+        </div>
+      </div>
+
+      <div class="sb-body">
+
+        <!-- Layer Panel -->
+        <div class="sb-panel" id="layers-panel" role="tabpanel">
+          <div id="layers-container"></div>
+        </div>
+
+        <!-- Analysis Panel -->
+        <div class="sb-panel hidden" id="analysis-panel" role="tabpanel">
+          <div class="analysis-section">
+
+            <!-- Stat Cards -->
+            <div>
+              <div class="chart-label" style="margin-bottom:8px;">Ringkasan Data</div>
+              <div class="stat-cards" id="stat-cards"></div>
+            </div>
+
+            <!-- Distribution Chart -->
+            <div class="insight-card">
+              <div class="chart-label">Distribusi Pusat Aktivitas</div>
+              <div class="mini-chart-wrap" style="height:100px;">
+                <canvas id="dist-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Insights -->
+            <div id="insights-box" style="display:flex;flex-direction:column;gap:8px;">
+              <div style="color:var(--tx-3);font-size:11px;text-align:center;padding:20px 0;">
+                Memuat analisis…
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- sb-body -->
+
+      <!-- Footer -->
+      <div style="padding:var(--sp-3);border-top:1px solid var(--glass-border);flex-shrink:0;">
+        <button id="btn-fit" style="
+          width:100%; height:30px; border:none; border-radius:var(--r-md);
+          background:var(--accent-dim); color:var(--accent);
+          font-family:var(--font-ui); font-size:11px; font-weight:700;
+          cursor:pointer; transition:background var(--t-fast);"
+          aria-label="Fit ke Bandung"
+          onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
+          onmouseout="this.style.background='var(--accent-dim)';this.style.color='var(--accent)'">
+          📍 Fit ke Kota Bandung
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- ════════════════════════════════════
+         MAP
+    ════════════════════════════════════ -->
+    <div id="map" aria-label="Peta interaktif Bandung">
+
+      <!-- Feature Popup -->
+      <div id="popup" class="off" role="dialog" aria-modal="true" aria-label="Detail fitur">
+        <div class="pop-head">
+          <div>
+            <span class="pop-badge"></span>
+            <div class="pop-title"></div>
+          </div>
+          <button class="pop-x" id="pop-close" aria-label="Tutup">✕</button>
+        </div>
+        <div class="pop-body"></div>
+      </div>
+
+      <!-- Map Controls replaced by MapLibre NavigationControl -->
+      <!-- Legend (left-bottom) -->
+      <div id="legend" aria-label="Legenda peta">
+        <div class="leg-title">Legenda</div>
+        <div id="legend-items"></div>
+        <!-- Heatmap gradient -->
+        <div style="margin-top:8px;">
+          <div class="leg-text" style="margin-bottom:3px;">Kepadatan</div>
+          <div class="heat-grad"></div>
+          <div class="heat-labels"><span>Rendah</span><span>Tinggi</span></div>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div id="statsbar" aria-label="Statistik" aria-live="polite">
+        <span class="live-dot"></span>
+        <div class="si"><span>Fitur:</span>&nbsp;<strong id="stat-feat">—</strong></div>
+        <div class="si"><span>Layer:</span>&nbsp;<strong id="stat-layers">—</strong></div>
+        <div class="si"><span>Zoom:</span>&nbsp;<strong id="stat-zoom">—</strong></div>
+        <div class="si"><span>FPS:</span>&nbsp;<strong id="stat-fps">—</strong></div>
+        <div class="sb-coord" id="stat-coord">—°, —°</div>
+        <div style="margin-left:auto;font-size:9px;color:var(--tx-3);">WGS84 · EPSG:4326</div>
+      </div>
+
+    </div><!-- #map -->
+
+  </div><!-- #content -->
+</div><!-- #app -->
+
+<!-- Toast Container -->
+<div id="toasts" aria-live="polite"></div>
+
+<!-- AI CHATBOT PANEL (drops from topbar) -->
+<div id="chat-panel" class="closed" role="dialog" aria-modal="true" aria-label="GeoBot AI">
+  <div class="chat-head">
+    <div class="chat-avatar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="13" rx="3" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor"/>
+        <circle cx="15.5" cy="9.5" r="1.5" fill="currentColor"/>
+        <path d="M8 21l4-5 4 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="chat-head-info">
+      <div class="chat-head-name">GeoBot</div>
+      <div class="chat-head-status"><span class="chat-status-dot"></span> Aktif</div>
+    </div>
+    <button class="ibtn" id="chat-clear" title="Hapus percakapan" aria-label="Hapus chat" style="width:28px;height:28px;font-size:12px">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8L13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="ibtn" id="chat-close" aria-label="Tutup chatbot" style="width:28px;height:28px;font-size:12px">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Quick Chips -->
+  <div class="chat-chips" id="chat-chips">
+    <button class="chip" data-q="Berapa jumlah fasilitas?">Statistik</button>
+    <button class="chip" data-q="Apa itu heatmap?">Heatmap</button>
+    <button class="chip" data-q="Cara pakai 3D">3D Guide</button>
+    <button class="chip" data-q="Analisis Bandung">Analisis</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-messages" id="chat-messages"></div>
+
+  <!-- Input -->
+  <div class="chat-input">
+    <textarea id="chat-ta" placeholder="Tanya tentang peta…" rows="1" aria-label="Pesan chatbot"></textarea>
+    <button class="chat-send" id="chat-send" aria-label="Kirim">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
