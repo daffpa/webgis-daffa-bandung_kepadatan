@@ -175,13 +175,27 @@ function filterNullFeatures(geojson, layer) {
     return layer.fields.some(k => p[k] && String(p[k]).trim());
   });
 
-  // Step 2: deduplicate by name (keep first occurrence, skip unnamed)
+  // Step 2: deduplicate by location (approx 11m resolution) and name to remove overlapping duplicates
   if (layer.type !== 'road3d') {
     const seen = new Set();
     geojson.features = geojson.features.filter(f => {
-      const name = f.properties?.name;
-      if (!name || !String(name).trim()) return true; // keep unnamed
-      const key = String(name).trim().toLowerCase();
+      let key = '';
+      if (f.geometry && f.geometry.coordinates) {
+        let coords = f.geometry.coordinates;
+        while (Array.isArray(coords) && Array.isArray(coords[0])) {
+          coords = coords[0];
+        }
+        if (Array.isArray(coords) && coords.length >= 2) {
+          key += coords[0].toFixed(4) + '_' + coords[1].toFixed(4);
+        }
+      }
+      
+      const name = f.properties?.name ? String(f.properties.name).trim().toLowerCase() : 'unnamed';
+      key += '_' + name;
+      
+      // Keep if no valid spatial key was found and it's unnamed
+      if (key === '_unnamed') return true;
+
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
