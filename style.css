@@ -274,13 +274,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-void);
 .op-row { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .op-label { font-size: 10px; color: var(--tx-3); font-weight: 600; width: 50px; flex-shrink: 0; }
 .op-slider {
-  -webkit-appearance: none; flex: 1; height: 4px;
+  appearance: none; -webkit-appearance: none; flex: 1; height: 4px;
   border-radius: var(--r-full); outline: none; cursor: pointer;
   background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct,80%),
     var(--bg-card) var(--pct,80%), var(--bg-card) 100%);
 }
 .op-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  appearance: none; -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
   background: var(--accent); cursor: pointer;
   box-shadow: 0 0 6px var(--accent-glow);
   transition: transform var(--t-fast);
