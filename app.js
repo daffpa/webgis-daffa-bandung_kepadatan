@@ -586,40 +586,67 @@ function bindClick(lid, cfg) {
 }
 
 /* ════════════════════════════════════════════
-   3D ARROW INDICATOR
+   3D ARROW INDICATOR — locked screen position
 ════════════════════════════════════════════ */
 function spawnArrow(lngLat, color) {
   const mapEl = $('#map');
-  // Remove any old arrow
+  // Clear old arrow
   mapEl.querySelectorAll('.click-arrow-marker').forEach(el => el.remove());
+  if (S._arrowMoveHandler) {
+    S.map.off('move', S._arrowMoveHandler);
+    S._arrowMoveHandler = null;
+  }
 
   const pt = S.map.project(lngLat);
+  const clr = color || '#60a5fa';
+
   const arrow = document.createElement('div');
   arrow.className = 'click-arrow-marker';
+  // 3D SVG pin: needle + shadow ellipse + glow rings
   arrow.innerHTML = `
-    <div class="arrow-body" style="--clr:${color || 'var(--accent)'}">▼</div>
-    <div class="arrow-ring" style="--clr:${color || 'var(--accent)'}"></div>
-    <div class="arrow-ring r2" style="--clr:${color || 'var(--accent)'}"></div>
+    <div class="arrow3d-wrap">
+      <svg class="arrow3d-svg" width="48" height="64" viewBox="0 0 48 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="pg${Date.now()}" cx="40%" cy="30%" r="65%">
+            <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="${clr}" stop-opacity="1"/>
+          </radialGradient>
+          <filter id="pin-shadow" x="-40%" y="-20%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="${clr}" flood-opacity="0.7"/>
+          </filter>
+        </defs>
+        <!-- Pin body -->
+        <path d="M24 2 C14 2 6 10 6 20 C6 32 24 58 24 58 C24 58 42 32 42 20 C42 10 34 2 24 2 Z"
+          fill="url(#pg${Date.now()})" filter="url(#pin-shadow)"/>
+        <!-- Gloss highlight -->
+        <ellipse cx="18" cy="14" rx="5" ry="7" fill="white" opacity="0.28"/>
+        <!-- Inner circle -->
+        <circle cx="24" cy="20" r="7" fill="white" opacity="0.92"/>
+        <circle cx="24" cy="20" r="4" fill="${clr}"/>
+      </svg>
+      <!-- Shadow ellipse on ground -->
+      <div class="arrow3d-shadow" style="--clr:${clr}"></div>
+      <!-- Glow ring 1 -->
+      <div class="arrow3d-ring" style="--clr:${clr};--delay:0s"></div>
+      <!-- Glow ring 2 -->
+      <div class="arrow3d-ring" style="--clr:${clr};--delay:0.55s"></div>
+    </div>
   `;
+
+  // Fixed screen position — does NOT track map move
+  arrow.style.position = 'absolute';
   arrow.style.left = `${pt.x}px`;
-  arrow.style.top  = `${pt.y - 38}px`;
+  arrow.style.top  = `${pt.y - 64}px`;
   mapEl.appendChild(arrow);
 
-  // Update position on map move
-  const updatePos = () => {
-    const newPt = S.map.project(lngLat);
-    arrow.style.left = `${newPt.x}px`;
-    arrow.style.top  = `${newPt.y - 38}px`;
-  };
-  S.map.on('move', updatePos);
-  S._arrowMoveHandler = updatePos;
-
-  // Auto-remove after 5s
-  setTimeout(() => {
+  // Auto-remove after 6s
+  const removeTimer = setTimeout(() => {
     arrow.classList.add('arrow-out');
-    if (S._arrowMoveHandler) S.map.off('move', S._arrowMoveHandler);
     setTimeout(() => arrow.remove(), 500);
-  }, 5000);
+  }, 6000);
+  // Store so closePopup can also remove it
+  S._arrowEl = arrow;
+  S._arrowTimer = removeTimer;
 }
 
 /* ════════════════════════════════════════════
@@ -646,6 +673,13 @@ function closePopup(e) {
   S.popupClosed = true;
   if (S.popupTimer) { clearTimeout(S.popupTimer); S.popupTimer = null; }
   if (S._onMoveEnd) { S.map.off('moveend', S._onMoveEnd); S._onMoveEnd = null; }
+  // Remove 3D arrow
+  if (S._arrowEl) {
+    clearTimeout(S._arrowTimer);
+    S._arrowEl.classList.add('arrow-out');
+    setTimeout(() => S._arrowEl?.remove(), 400);
+    S._arrowEl = null;
+  }
   const popup = $('#popup');
   if (popup) {
     popup.classList.add('off');

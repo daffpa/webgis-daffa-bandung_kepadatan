@@ -886,50 +886,70 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-void);
 }
 
 /* ══════════════════════════════════════════════
-   3D ARROW INDICATOR — Click Marker
+   3D MAP PIN — Click Indicator (Locked Screen)
 ══════════════════════════════════════════════ */
 .click-arrow-marker {
   position: absolute;
   pointer-events: none;
   z-index: 160;
   transform: translate(-50%, 0);
-  display: flex; flex-direction: column; align-items: center;
-  animation: arrow-in .4s cubic-bezier(.34,1.56,.64,1) both;
+  animation: pin3d-in .5s cubic-bezier(.34,1.56,.64,1) both;
 }
 .click-arrow-marker.arrow-out {
-  animation: arrow-out .4s ease forwards;
+  animation: pin3d-out .4s ease forwards;
 }
-.arrow-body {
-  font-size: 22px;
-  color: var(--clr, var(--accent));
-  filter: drop-shadow(0 0 8px var(--clr, var(--accent))) drop-shadow(0 2px 4px rgba(0,0,0,.6));
-  animation: arrow-bounce 1.2s ease-in-out infinite;
-  line-height: 1;
+
+.arrow3d-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  perspective: 200px;
 }
-.arrow-ring {
-  position: absolute;
-  width: 24px; height: 24px;
+
+.arrow3d-svg {
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.5));
+  animation: pin3d-bounce 1.4s ease-in-out infinite;
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+}
+
+.arrow3d-shadow {
+  width: 28px; height: 10px;
   border-radius: 50%;
+  background: radial-gradient(ellipse, var(--clr) 0%, transparent 70%);
+  opacity: 0.35;
+  margin-top: -4px;
+  animation: shadow3d-pulse 1.4s ease-in-out infinite;
+  filter: blur(3px);
+}
+
+.arrow3d-ring {
+  position: absolute;
   bottom: -8px;
-  border: 2px solid var(--clr, var(--accent));
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--clr);
   opacity: 0;
-  animation: arrow-ring-out 1.4s ease-out infinite;
+  animation: pin3d-ring 1.6s var(--delay, 0s) ease-out infinite;
 }
-.arrow-ring.r2 {
-  animation-delay: .5s;
+
+@keyframes pin3d-bounce {
+  0%, 100% { transform: translateY(0) rotateX(12deg); }
+  50%       { transform: translateY(-10px) rotateX(4deg); }
 }
-@keyframes arrow-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
+@keyframes shadow3d-pulse {
+  0%, 100% { transform: scale(1);   opacity: .35; }
+  50%       { transform: scale(.6); opacity: .15; }
 }
-@keyframes arrow-ring-out {
-  0%   { width:0; height:0; opacity:.8; }
-  100% { width:48px; height:48px; opacity:0; margin-left:-12px; }
+@keyframes pin3d-ring {
+  0%   { width:8px;  height:8px;  opacity:.9; margin-left:0; }
+  100% { width:52px; height:52px; opacity:0;  margin-left:-22px; margin-bottom:-22px; }
 }
-@keyframes arrow-in {
-  from { opacity:0; transform: translate(-50%,-16px) scale(.5); }
+@keyframes pin3d-in {
+  from { opacity:0; transform: translate(-50%,-24px) scale(.4); }
   to   { opacity:1; transform: translate(-50%,0) scale(1); }
 }
-@keyframes arrow-out {
-  to { opacity:0; transform: translate(-50%,-10px) scale(.6); }
+@keyframes pin3d-out {
+  to { opacity:0; transform: translate(-50%,-12px) scale(.55); }
 }

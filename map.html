@@ -20,6 +20,14 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232dd4bf'/><text y='22' font-size='20' text-anchor='middle' x='16'>🗺</text></svg>" />
+  <!-- Redirect to homepage if not coming from it -->
+  <script>
+    (function() {
+      if (!sessionStorage.getItem('gis-entered')) {
+        window.location.replace('index.html');
+      }
+    })();
+  </script>
 </head>
 
 <body>

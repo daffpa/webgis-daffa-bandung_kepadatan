@@ -320,7 +320,7 @@ footer a:hover{color:var(--teal)}
     <a class="nav-link" href="#features">Fitur</a>
     <a class="nav-link" href="#data">Data</a>
     <a class="nav-link" href="#how">Cara Pakai</a>
-    <a class="nav-cta" href="map.html">
+    <a class="nav-cta" href="map.html" onclick="sessionStorage.setItem('gis-entered','1')">
       <span>🗺️</span> Buka Peta
     </a>
   </div>
@@ -343,7 +343,7 @@ footer a:hover{color:var(--teal)}
   </p>
 
   <div class="hero-actions">
-    <a class="btn-hero primary" href="map.html">
+    <a class="btn-hero primary" href="map.html" onclick="sessionStorage.setItem('gis-entered','1')">
       <span>🗺️</span> Mulai Eksplorasi Peta
     </a>
     <a class="btn-hero ghost" href="#features">
@@ -533,7 +533,7 @@ footer a:hover{color:var(--teal)}
   <div class="cta-box">
     <h2 class="cta-title">Siap Mulai<br/><span class="grad-text">Eksplorasi Bandung?</span></h2>
     <p class="cta-desc">Platform GIS interaktif dengan data real dari OpenStreetMap. Tanpa login, tanpa biaya, langsung pakai.</p>
-    <a class="btn-hero primary" href="map.html" style="margin:0 auto;display:inline-flex;font-size:16px;padding:16px 36px">
+    <a class="btn-hero primary" href="map.html" onclick="sessionStorage.setItem('gis-entered','1')" style="margin:0 auto;display:inline-flex;font-size:16px;padding:16px 36px">
       <span>🗺️</span> Buka Peta Sekarang
     </a>
   </div>
