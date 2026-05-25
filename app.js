@@ -175,31 +175,26 @@ function filterNullFeatures(geojson, layer) {
     return layer.fields.some(k => p[k] && String(p[k]).trim());
   });
 
-  // Step 2: deduplicate by location (approx 11m resolution) and name to remove overlapping duplicates
+  // Step 2: strict deduplication — only keep the first occurrence of any given name
   if (layer.type !== 'road3d') {
-    const seen = new Set();
-    geojson.features = geojson.features.filter(f => {
-      let key = '';
-      if (f.geometry && f.geometry.coordinates) {
-        let coords = f.geometry.coordinates;
-        while (Array.isArray(coords) && Array.isArray(coords[0])) {
-          coords = coords[0];
-        }
-        if (Array.isArray(coords) && coords.length >= 2) {
-          key += coords[0].toFixed(4) + '_' + coords[1].toFixed(4);
-        }
+    const seenByName = new Map(); // name -> best feature index
+    const out = [];
+    for (const f of geojson.features) {
+      const rawName = f.properties?.name;
+      if (!rawName || !String(rawName).trim()) {
+        out.push(f); // keep unnamed
+        continue;
       }
-      
-      const name = f.properties?.name ? String(f.properties.name).trim().toLowerCase() : 'unnamed';
-      key += '_' + name;
-      
-      // Keep if no valid spatial key was found and it's unnamed
-      if (key === '_unnamed') return true;
-
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+      const key = String(rawName).trim().toLowerCase()
+        .replace(/[\s\-_]+/g, ' ')   // normalize spaces/dashes
+        .replace(/^(rs |rumah sakit |pt |cv |sd |smp |sma |smk |universitas |politeknik )/i, ''); // strip common prefixes for comparison
+      if (!seenByName.has(key)) {
+        seenByName.set(key, f);
+        out.push(f);
+      }
+      // else: skip duplicate name
+    }
+    geojson.features = out;
   }
 
   console.log(`[${layer.id}] filtered+clipped+deduped: ${before} → ${geojson.features.length}`);
@@ -591,23 +586,40 @@ function bindClick(lid, cfg) {
 }
 
 /* ════════════════════════════════════════════
-   CLICK RING ANIMATION
+   3D ARROW INDICATOR
 ════════════════════════════════════════════ */
-function spawnClickRings(lngLat) {
+function spawnArrow(lngLat, color) {
   const mapEl = $('#map');
+  // Remove any old arrow
+  mapEl.querySelectorAll('.click-arrow-marker').forEach(el => el.remove());
+
   const pt = S.map.project(lngLat);
+  const arrow = document.createElement('div');
+  arrow.className = 'click-arrow-marker';
+  arrow.innerHTML = `
+    <div class="arrow-body" style="--clr:${color || 'var(--accent)'}">▼</div>
+    <div class="arrow-ring" style="--clr:${color || 'var(--accent)'}"></div>
+    <div class="arrow-ring r2" style="--clr:${color || 'var(--accent)'}"></div>
+  `;
+  arrow.style.left = `${pt.x}px`;
+  arrow.style.top  = `${pt.y - 38}px`;
+  mapEl.appendChild(arrow);
 
-  // Remove old rings
-  mapEl.querySelectorAll('.click-ring,.click-ring-2,.click-ring-3').forEach(el=>el.remove());
+  // Update position on map move
+  const updatePos = () => {
+    const newPt = S.map.project(lngLat);
+    arrow.style.left = `${newPt.x}px`;
+    arrow.style.top  = `${newPt.y - 38}px`;
+  };
+  S.map.on('move', updatePos);
+  S._arrowMoveHandler = updatePos;
 
-  ['click-ring','click-ring-2','click-ring-3'].forEach(cls => {
-    const el = document.createElement('div');
-    el.className = cls;
-    el.style.left = `${pt.x}px`;
-    el.style.top  = `${pt.y}px`;
-    mapEl.appendChild(el);
-    setTimeout(() => el.remove(), 2000);
-  });
+  // Auto-remove after 5s
+  setTimeout(() => {
+    arrow.classList.add('arrow-out');
+    if (S._arrowMoveHandler) S.map.off('move', S._arrowMoveHandler);
+    setTimeout(() => arrow.remove(), 500);
+  }, 5000);
 }
 
 /* ════════════════════════════════════════════
@@ -707,8 +719,8 @@ function showPopup(feature, cfg, lngLat) {
   if (S.popupTimer) { clearTimeout(S.popupTimer); S.popupTimer = null; }
   S.popupClosed = false;
 
-  // Rings + fly
-  spawnClickRings(lngLat);
+  // Spawn arrow indicator + rings + fly
+  spawnArrow(lngLat, cfg.color);
   flyToFeature(lngLat);
 
   // Position helper — called after map settles
@@ -835,6 +847,7 @@ function buildLayerCards() {
     const card = document.createElement('div');
     card.className = `layer-card ${cfg.vis ? 'on':''}`;
     card.id = `card-${cfg.id}`;
+    card.style.setProperty('--layer-clr', cfg.color);
 
     card.innerHTML = `
       <div class="lc-head" id="lch-${cfg.id}">
