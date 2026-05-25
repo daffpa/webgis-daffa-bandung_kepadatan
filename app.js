@@ -633,15 +633,25 @@ function spawnArrow(lngLat, color) {
     </div>
   `;
 
-  // Fixed screen position — does NOT track map move
+  // Fixed screen position initially
   arrow.style.position = 'absolute';
   arrow.style.left = `${pt.x}px`;
   arrow.style.top  = `${pt.y - 64}px`;
   mapEl.appendChild(arrow);
 
+  // Track the geographic point — update on every map move/zoom/pitch
+  const updatePos = () => {
+    const newPt = S.map.project(lngLat);
+    arrow.style.left = `${newPt.x}px`;
+    arrow.style.top  = `${newPt.y - 64}px`;
+  };
+  S.map.on('move', updatePos);
+  S._arrowMoveHandler = updatePos;
+
   // Auto-remove after 6s
   const removeTimer = setTimeout(() => {
     arrow.classList.add('arrow-out');
+    S.map.off('move', updatePos);
     setTimeout(() => arrow.remove(), 500);
   }, 6000);
   // Store so closePopup can also remove it
@@ -673,9 +683,10 @@ function closePopup(e) {
   S.popupClosed = true;
   if (S.popupTimer) { clearTimeout(S.popupTimer); S.popupTimer = null; }
   if (S._onMoveEnd) { S.map.off('moveend', S._onMoveEnd); S._onMoveEnd = null; }
-  // Remove 3D arrow
+  // Remove 3D arrow + unregister its move handler
   if (S._arrowEl) {
     clearTimeout(S._arrowTimer);
+    if (S._arrowMoveHandler) { S.map.off('move', S._arrowMoveHandler); S._arrowMoveHandler = null; }
     S._arrowEl.classList.add('arrow-out');
     setTimeout(() => S._arrowEl?.remove(), 400);
     S._arrowEl = null;
